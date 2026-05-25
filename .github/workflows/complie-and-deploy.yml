@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Future-proofs actions against Node 20 deprecations
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Prevents Node 20 runner deprecation warnings
 
 jobs:
   build-and-deploy:
@@ -26,11 +26,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      # 3. Install MkDocs and full system LaTeX environments
+      # 3. Install MkDocs, system dependencies, and corporate-ready LaTeX font sets
       - name: Install Hub Dependencies
         run: |
           pip install mkdocs-material
-          sudo apt-get update && sudo apt-get install -y pandoc texlive-latex-recommended texlive-xetex lmodern
+          sudo apt-get update && sudo apt-get install -y \
+            pandoc \
+            texlive-latex-recommended \
+            texlive-xetex \
+            lmodern \
+            texlive-fonts-extra
 
       # 4. Download and configure the premium Eisvogel LaTeX template
       - name: Download Eisvogel Template
@@ -40,7 +45,7 @@ jobs:
           tar -xvzf Eisvogel-2.4.2.tar.gz -C ~/.local/share/pandoc/templates/
           mv ~/.local/share/pandoc/templates/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
 
-      # 5. Dynamically find all index.md files in subfolders and compile them to PDFs
+      # 5. Dynamically compile markdown files using modern XeLaTeX engine
       - name: Compile All PDFs
         run: |
           find docs -name "index.md" ! -path "docs/index.md" | while read -r file; do
@@ -52,6 +57,7 @@ jobs:
               -o "$dir/$paper_name.pdf" \
               --from markdown \
               --template eisvogel \
+              --pdf-engine=xelatex \
               --listings \
               --number-sections \
               --toc
