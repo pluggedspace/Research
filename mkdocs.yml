@@ -1,0 +1,15 @@
+site_name: Pluggedspace Research Hub
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+
+nav:
+  - Welcome: index.md
+  - Akili Engine Framework:
+    - Read Online: akili-engine/index.md
+    - Download PDF: akili-engine/akili-engine.pdf
+  - Ecom OS Core Treasury:
+    - Read Online: ecom-os/index.md
+    - Download PDF: ecom-os/ecom-os.pdf
