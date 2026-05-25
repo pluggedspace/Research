@@ -35,24 +35,27 @@ jobs:
             texlive-latex-recommended \
             texlive-xetex \
             lmodern \
-            texlive-fonts-extra
+            texlive-fonts-extra \
+            texlive-latex-extra \
+            fonts-font-awesome \
+            texlive-lang-english
 
-      # 4. Download and configure the premium Eisvogel LaTeX template
+      # 4. Download and configure the premium Eisvogel LaTeX template (corrected)
       - name: Download Eisvogel Template
         run: |
           mkdir -p ~/.local/share/pandoc/templates
           wget https://github.com/Wandmalfarbe/pandoc-latex-template/releases/download/v2.4.2/Eisvogel-2.4.2.tar.gz
-          tar -xvzf Eisvogel-2.4.2.tar.gz -C ~/.local/share/pandoc/templates/
-          mv ~/.local/share/pandoc/templates/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
+          tar -xvzf Eisvogel-2.4.2.tar.gz
+          cp eisvogel/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
+          rm -rf eisvogel Eisvogel-2.4.2.tar.gz
 
       # 5. Dynamically compile markdown files using modern XeLaTeX engine
       - name: Compile All PDFs
         run: |
-          find docs -name "index.md" ! -path "docs/index.md" | while read -r file; do
+          find docs -name "index.md" ! -path "docs/index.md" -print0 | while IFS= read -r -d '' file; do
             dir=$(dirname "$file")
             paper_name=$(basename "$dir")
             echo "Compiling $file to $dir/$paper_name.pdf..."
-            
             pandoc "$file" \
               -o "$dir/$paper_name.pdf" \
               --from markdown \
