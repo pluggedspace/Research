@@ -8,26 +8,31 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Future-proofs actions against Node 20 deprecations
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout the repository source code
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      # 2. Set up Python environment correctly
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-node-version: '3.x'
+          python-version: '3.11'
 
-      # Install Python dependencies and Pandoc environment
+      # 3. Install MkDocs and full system LaTeX environments
       - name: Install Hub Dependencies
         run: |
           pip install mkdocs-material
-          sudo apt-get update && sudo apt-get install -p -y pandoc texlive-latex-recommended texlive-xetex lmodern
+          sudo apt-get update && sudo apt-get install -y pandoc texlive-latex-recommended texlive-xetex lmodern
 
-      # Download Eisvogel template manually for native control in a custom loop
+      # 4. Download and configure the premium Eisvogel LaTeX template
       - name: Download Eisvogel Template
         run: |
           mkdir -p ~/.local/share/pandoc/templates
@@ -35,8 +40,7 @@ jobs:
           tar -xvzf Eisvogel-2.4.2.tar.gz -C ~/.local/share/pandoc/templates/
           mv ~/.local/share/pandoc/templates/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
 
-      # DYNAMIC STEP: Loops through every index.md in the docs subfolders
-      # and compiles a corresponding PDF in that exact same folder.
+      # 5. Dynamically find all index.md files in subfolders and compile them to PDFs
       - name: Compile All PDFs
         run: |
           find docs -name "index.md" ! -path "docs/index.md" | while read -r file; do
@@ -53,10 +57,12 @@ jobs:
               --toc
           done
 
-      - name: Build Static Research Website
+      # 6. Build the static website mapping
+      - name: Build Static Website
         run: |
           mkdocs build
 
+      # 7. Deploy the unified site and PDFs to GitHub Pages
       - name: Deploy Hub to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
