@@ -9,24 +9,21 @@ permissions:
   contents: write
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Prevents Node 20 runner deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repository source code
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      # 2. Set up Python environment correctly
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3. Install MkDocs, system dependencies, and corporate-ready LaTeX font sets
       - name: Install Hub Dependencies
         run: |
           pip install mkdocs-material
@@ -40,16 +37,17 @@ jobs:
             fonts-font-awesome \
             texlive-lang-english
 
-      # 4. Download and configure the premium Eisvogel LaTeX template (corrected)
+      # Dynamically download the latest Eisvogel template (no hardcoded version)
       - name: Download Eisvogel Template
         run: |
           mkdir -p ~/.local/share/pandoc/templates
-          wget https://github.com/Wandmalfarbe/pandoc-latex-template/releases/download/v2.4.2/Eisvogel-2.4.2.tar.gz
-          tar -xvzf Eisvogel-2.4.2.tar.gz
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/Wandmalfarbe/pandoc-latex-template/releases/latest | grep "browser_download_url.*\.tar\.gz" | head -n1 | cut -d '"' -f 4)
+          echo "Downloading from: $DOWNLOAD_URL"
+          wget "$DOWNLOAD_URL"
+          tar -xzf Eisvogel-*.tar.gz
           cp eisvogel/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
-          rm -rf eisvogel Eisvogel-2.4.2.tar.gz
+          rm -rf eisvogel Eisvogel-*.tar.gz
 
-      # 5. Dynamically compile markdown files using modern XeLaTeX engine
       - name: Compile All PDFs
         run: |
           find docs -name "index.md" ! -path "docs/index.md" -print0 | while IFS= read -r -d '' file; do
@@ -66,12 +64,9 @@ jobs:
               --toc
           done
 
-      # 6. Build the static website mapping
       - name: Build Static Website
-        run: |
-          mkdocs build
+        run: mkdocs build
 
-      # 7. Deploy the unified site and PDFs to GitHub Pages
       - name: Deploy Hub to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
