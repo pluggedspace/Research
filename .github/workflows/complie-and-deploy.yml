@@ -37,16 +37,30 @@ jobs:
             fonts-font-awesome \
             texlive-lang-english
 
-      # Dynamically download the latest Eisvogel template (no hardcoded version)
+      # Dynamically download the latest Eisvogel template and copy the correct template file
       - name: Download Eisvogel Template
         run: |
           mkdir -p ~/.local/share/pandoc/templates
           DOWNLOAD_URL=$(curl -s https://api.github.com/repos/Wandmalfarbe/pandoc-latex-template/releases/latest | grep "browser_download_url.*\.tar\.gz" | head -n1 | cut -d '"' -f 4)
           echo "Downloading from: $DOWNLOAD_URL"
           wget "$DOWNLOAD_URL"
-          tar -xzf Eisvogel-*.tar.gz
-          cp eisvogel/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
-          rm -rf eisvogel Eisvogel-*.tar.gz
+          
+          # Create a secure temporary directory for extraction
+          mkdir -p extracted_template
+          tar -xzf Eisvogel-*.tar.gz -C extracted_template
+          
+          # Dynamic fallback check: handles legacy versions (eisvogel.tex) OR modern versions (template.tex)
+          if [ -f extracted_template/template.tex ]; then
+            cp extracted_template/template.tex ~/.local/share/pandoc/templates/eisvogel.latex
+          elif [ -f extracted_template/eisvogel.tex ]; then
+            cp extracted_template/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
+          else
+            # Handles cases where files might extract inside an inner archive directory
+            cp extracted_template/*/template.tex ~/.local/share/pandoc/templates/eisvogel.latex || cp extracted_template/*/eisvogel.tex ~/.local/share/pandoc/templates/eisvogel.latex
+          fi
+          
+          # Cleanup environment workspace
+          rm -rf extracted_template Eisvogel-*.tar.gz
 
       - name: Compile All PDFs
         run: |
